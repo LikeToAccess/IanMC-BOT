@@ -12,7 +12,7 @@
 #==============================================================================
 import os
 from datetime import datetime
-from mcrcon import MCRcon
+from mcrcon   import MCRcon
 
 
 def read_file(filename, directory=None, filter=False):

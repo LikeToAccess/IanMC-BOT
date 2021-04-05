@@ -12,7 +12,7 @@
 #==============================================================================
 import discord
 from discord.ext import commands, tasks
-from functions import *
+from functions   import *
 
 
 credentials = read_file("credentials.md", filter=True)
@@ -57,7 +57,7 @@ async def set_status():
 	players = server.list_players()
 	if players[0] == "0": status = discord.Status.idle
 	else: status = discord.Status.online
-	await bot.change_presence(status=status, activity=discord.Game(status))
+	await bot.change_presence(status=status, activity=discord.Game(f"IanMC {players}"))
 
 @bot.command(pass_context=True, name="list")
 async def list(ctx):
