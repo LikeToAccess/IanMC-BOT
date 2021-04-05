@@ -10,6 +10,7 @@
 # license           : MIT
 # py version        : 3.8.2 (must run on 3.6 or higher)
 #==============================================================================
+from mcrcon import MCRcon
 import os
 
 
@@ -38,6 +39,34 @@ def filter_list(lines, filename=False):
 		if line[:1] != "#" and line != "":
 			data.append(line)
 	return data
+
+
+class Minecraft:
+	def __init__(self, address, password):
+		mcr = MCRcon(address, password)
+		self.address = address
+		self.password = password
+		self.mcr = mcr
+
+	def connect(self):
+		self.mcr.connect()
+
+	def disconnect(self):
+		self.mcr.disconnect()
+
+	# Only highest level users should access
+	def run(self, cmd):
+		if not cmd[:1] == "/":
+			cmd = f"/{cmd}"
+		return self.mcr.command(cmd)
+
+	def list_players(self):
+		resp = self.run("list").split()
+		return f"{resp[2]}/{resp[7]}"
+
+	# Requires Authentication
+	def whitelist_add(self, player):
+		resp = self.run(f"whitelist add {player}")
 
 
 if __name__ == "__main__":
