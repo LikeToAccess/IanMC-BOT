@@ -10,26 +10,27 @@
 # license           : MIT
 # py version        : 3.8.2 (must run on 3.6 or higher)
 #==============================================================================
-from mcrcon import MCRcon
 import os
+from datetime import datetime
+from mcrcon import MCRcon
 
 
 def read_file(filename, directory=None, filter=False):
 	if directory:
 		os.chdir(f"{os.getcwd()}/{directory}")
-	with open(filename, "r") as f:
-		lines = f.read().split("\n")
+	with open(filename, "r") as file:
+		lines = file.read().split("\n")
 	if filter:
 		lines = filter_list(lines)
 	return lines
 
 def write_file(filename, msg):
-	with open(filename, "w") as f:
-		f.write(msg)
+	with open(filename, "w") as file:
+		file.write(msg)
 
 def append_file(filename, msg):
-	with open(filename, "a") as f:
-		f.write(msg)
+	with open(filename, "a") as file:
+		file.write(msg)
 
 def filter_list(lines, filename=False):
 	if filename:
@@ -39,6 +40,14 @@ def filter_list(lines, filename=False):
 		if line[:1] != "#" and line != "":
 			data.append(line)
 	return data
+
+async def log(ctx, filename="log.txt"):
+	data = ctx.message.content
+	data = f"[{datetime.now()}]{ctx.message.author} :: {data}\n"
+	print(data)
+	append_file(filename, data)
+	await ctx.message.delete()
+	await ctx.send(f"User *\"{ctx.author}\"*, is not in the allowed users list!\nThis event has been logged.")
 
 
 class Minecraft:
@@ -66,7 +75,14 @@ class Minecraft:
 
 	# Requires Authentication
 	def whitelist_add(self, player):
-		resp = self.run(f"whitelist add {player}")
+		return self.run(f"whitelist add {player}")
+
+	# Requires Authentication
+	def whitelist_remove(self, player):
+		return self.run(f"whitelist remove {player}")
+
+	def whitelist_list(self, player):
+		return self.run(f"whitelist add {player}")
 
 
 if __name__ == "__main__":
