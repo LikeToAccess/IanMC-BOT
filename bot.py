@@ -43,8 +43,9 @@ def run():
 async def check_perms(ctx):
 	author = ctx.message.author
 	if str(author.id) in allowed_users:
+		log(ctx, True)
 		return True
-	await log(ctx)
+	await log(ctx, False)
 	return False
 
 @bot.event
@@ -59,23 +60,79 @@ async def set_status():
 	else: status = discord.Status.online
 	await bot.change_presence(status=status, activity=discord.Game(f"IanMC {players}"))
 
+
+##################
+# v MIXED CMDS v #
+##################
+@bot.command(pass_context=True, name="whitelist")
+async def whitelist(ctx, func=None, player=None):
+	if not player:
+		if not func:
+			await server.whitelist_list(ctx)
+		elif await check_perms(ctx):
+			await server.whitelist_add(ctx, func)
+	elif func == "list":
+		await server.whitelist_list(ctx)
+	elif func == "add" and await check_perms(ctx):
+		await server.whitelist_add(ctx, player)
+	elif func == "remove" and await check_perms(ctx):
+		await server.whitelist_remove(ctx, player)
+
+#################
+# v USER CMDS v #
+#################
 @bot.command(pass_context=True, name="list")
 async def list(ctx):
 	await ctx.send(server.run("list"))
 
-@bot.command(pass_context=True, name="whitelist")
-async def whitelist(ctx, func, player):
-	if func == "list":
-		server.whitelist_list(player)
-	elif func == "add" and await check_perms(ctx):
-		server.whitelist_add(player)
-	elif func == "remove" and await check_perms(ctx):
-		server.whitelist_remove(player)
-
+##################
+# v ADMIN CMDS v #
+##################
 @bot.command(pass_context=True, name="kick")
 async def kick(ctx, player):
 	if await check_perms(ctx):
 		await ctx.send(server.run(f"kick {player}"))
+
+@bot.command(pass_context=True, name="op")
+async def op(ctx, player):
+	if await check_perms(ctx):
+		await ctx.send(server.run(f"op {player}"))
+
+@bot.command(pass_context=True, name="deop")
+async def deop(ctx, player):
+	if await check_perms(ctx):
+		await ctx.send(server.run(f"deop {player}"))
+
+@bot.command(pass_context=True, name="ban")
+async def ban(ctx, player):
+	if await check_perms(ctx):
+		await ctx.send(server.run(f"ban {player}"))
+
+@bot.command(pass_context=True, name="unban", aliases=["pardon"])
+async def unban(ctx, player):
+	if await check_perms(ctx):
+		await ctx.send(server.run(f"pardon {player}"))
+
+@bot.command(pass_context=True, name="restart")
+async def restart(ctx):
+	if await check_perms(ctx):
+		await ctx.send(server.run("restart"))
+
+@bot.command(pass_context=True, name="stop")
+async def stop(ctx):
+	if await check_perms(ctx):
+		await ctx.send(server.run("stop"))
+
+@bot.command(pass_context=True, name="authenticate", aliases=["auth","trust"])
+async def auth(ctx, user:discord.Member):
+	if ctx.message.author.id == 354992856609325058:
+		msg = f"\n# {user} ID\n{user.id}\n"
+		append_file("credentials.md", msg)
+		await ctx.send(f"Added \"{user}\" to list of trusted admins.")
+		await log(ctx, True)
+	else:
+		await ctx.send("Only the server owner can run this!")
+		await log(ctx, False)
 
 
 if __name__ == "__main__":

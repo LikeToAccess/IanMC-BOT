@@ -21,4 +21,7 @@ michael5259
 ## Authorized Users for High-Level Command Execution:
 
 # Corporal_panda16#6174 ID
-354992856609325058l
+354992856609325058
+
+# GamingPenguinFX#3934 ID
+313645308674441226

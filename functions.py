@@ -41,13 +41,15 @@ def filter_list(lines, filename=False):
 			data.append(line)
 	return data
 
-async def log(ctx, filename="log.txt"):
+async def log(ctx, authenticated, filename="log.txt"):
+	if not authenticated:
+		await ctx.message.delete()
+		await ctx.send(f"User *\"{ctx.author}\"*, is not in the allowed users list!\nThis event has been logged.")
+	authenticated = "FAILED to execute" if not authenticated else "SUCCESFULLY executed"
 	data = ctx.message.content
-	data = f"[{datetime.now()}]{ctx.message.author} :: {data}\n"
+	data = f"[{datetime.now()}]{ctx.message.author} :: {authenticated} \"{data}\"\n"
 	print(data)
 	append_file(filename, data)
-	await ctx.message.delete()
-	await ctx.send(f"User *\"{ctx.author}\"*, is not in the allowed users list!\nThis event has been logged.")
 
 
 class Minecraft:
@@ -74,15 +76,21 @@ class Minecraft:
 		return f"{resp[2]}/{resp[7]}"
 
 	# Requires Authentication
-	def whitelist_add(self, player):
-		return self.run(f"whitelist add {player}")
+	async def whitelist_add(self, ctx, player):
+		resp = self.run(f"whitelist add {player}")
+		await ctx.send(resp)
+		return resp
 
 	# Requires Authentication
-	def whitelist_remove(self, player):
-		return self.run(f"whitelist remove {player}")
+	async def whitelist_remove(self, ctx, player):
+		resp = self.run(f"whitelist remove {player}")
+		await ctx.send(resp)
+		return resp
 
-	def whitelist_list(self, player):
-		return self.run(f"whitelist add {player}")
+	async def whitelist_list(self, ctx):
+		resp = self.run("whitelist list")
+		await ctx.send(resp)
+		return resp
 
 
 if __name__ == "__main__":

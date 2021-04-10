@@ -1,0 +1,3 @@
+[2021-04-06 20:29:44.510366]Corporal_panda16#6174 :: FAILED to execute "please whitelist remove None"
+[2021-04-06 20:45:40.131904]Corporal_panda16#6174 :: SUCCESFULLY executed "please trust <@!313645308674441226>"
+[2021-04-06 20:46:37.596531]Corporal_panda16#6174 :: SUCCESFULLY executed "please trust <@!313645308674441226>"
