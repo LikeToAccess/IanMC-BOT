@@ -41,9 +41,11 @@ def run():
 		print(f"Stopped with error: {error}")
 
 async def check_perms(ctx):
+	global allowed_users
+	allowed_users = read_file("credentials.md", filter=True)[3:]
 	author = ctx.message.author
 	if str(author.id) in allowed_users:
-		log(ctx, True)
+		await log(ctx, True)
 		return True
 	await log(ctx, False)
 	return False
@@ -53,7 +55,7 @@ async def on_ready():
 	print(f"{bot.user} successfuly connected!")
 	set_status.start()
 
-@tasks.loop(seconds=20)
+@tasks.loop(seconds=45)
 async def set_status():
 	players = server.list_players()
 	if players[0] == "0": status = discord.Status.idle
@@ -89,9 +91,10 @@ async def list(ctx):
 # v ADMIN CMDS v #
 ##################
 @bot.command(pass_context=True, name="kick")
-async def kick(ctx, player):
+async def kick(ctx, player, *args):
 	if await check_perms(ctx):
-		await ctx.send(server.run(f"kick {player}"))
+		args = " ".join(args) if args else ""
+		await ctx.send(server.run(f"kick {player} {args}"))
 
 @bot.command(pass_context=True, name="op")
 async def op(ctx, player):
@@ -104,9 +107,10 @@ async def deop(ctx, player):
 		await ctx.send(server.run(f"deop {player}"))
 
 @bot.command(pass_context=True, name="ban")
-async def ban(ctx, player):
+async def ban(ctx, player, *args):
 	if await check_perms(ctx):
-		await ctx.send(server.run(f"ban {player}"))
+		args = " ".join(args) if args else ""
+		await ctx.send(server.run(f"ban {player} {args}"))
 
 @bot.command(pass_context=True, name="unban", aliases=["pardon"])
 async def unban(ctx, player):
@@ -116,19 +120,37 @@ async def unban(ctx, player):
 @bot.command(pass_context=True, name="restart")
 async def restart(ctx):
 	if await check_perms(ctx):
-		await ctx.send(server.run("restart"))
+		server.run("restart")
+		await ctx.send("Restarting the server")
 
 @bot.command(pass_context=True, name="stop")
 async def stop(ctx):
 	if await check_perms(ctx):
-		await ctx.send(server.run("stop"))
+		server.run("stop")
+		await ctx.send("Stopping the server")
+
+@bot.command(pass_context=True, name="say")
+async def say(ctx, *args):
+	if await check_perms(ctx):
+		if args:
+			args = " ".join(args)
+			server.run(f"say {args}")
+			await ctx.send("Message sent")
+		else:
+			await ctx.send("Hey! You forgot to write a message to be sent!")
+
+@bot.command(pass_context=True, name="find")
+async def find(ctx, *args):
+	if await check_perms(ctx):
+		log_data = read_file("log.txt")
+		#find log events
 
 @bot.command(pass_context=True, name="authenticate", aliases=["auth","trust"])
 async def auth(ctx, user:discord.Member):
 	if ctx.message.author.id == 354992856609325058:
 		msg = f"\n# {user} ID\n{user.id}\n"
 		append_file("credentials.md", msg)
-		await ctx.send(f"Added \"{user}\" to list of trusted admins.")
+		await ctx.send(f"Added \"{user}\" to list of trusted admins")
 		await log(ctx, True)
 	else:
 		await ctx.send("Only the server owner can run this!")

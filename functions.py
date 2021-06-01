@@ -48,7 +48,7 @@ async def log(ctx, authenticated, filename="log.txt"):
 	authenticated = "FAILED to execute" if not authenticated else "SUCCESFULLY executed"
 	data = ctx.message.content
 	data = f"[{datetime.now()}]{ctx.message.author} :: {authenticated} \"{data}\"\n"
-	print(data)
+	print(data.strip("\n"))
 	append_file(filename, data)
 
 
@@ -67,9 +67,17 @@ class Minecraft:
 
 	# Only highest level users should access
 	def run(self, cmd):
-		if not cmd[:1] == "/":
-			cmd = f"/{cmd}"
-		return self.mcr.command(cmd)
+		if cmd[:1] == "/":
+			cmd = f"{cmd}"
+		print(f"DEBUG: {cmd}")
+		try:
+			resp = self.mcr.command(cmd)
+		except BrokenPipeError:
+			print("DEBUG: Reconnecting...")
+			self.disconnect()
+			self.connect()
+			self.run(cmd)
+		return resp if resp else f"Error, no response. Please let Ian know so he can fix this!\n```Command that gave the error: {cmd}```"
 
 	def list_players(self):
 		resp = self.run("list").split()
