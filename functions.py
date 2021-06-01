@@ -60,7 +60,11 @@ class Minecraft:
 		self.mcr = mcr
 
 	def connect(self):
-		self.mcr.connect()
+		try:
+			self.mcr.connect()
+			return True
+		except TimeoutError:
+			return False
 
 	def disconnect(self):
 		self.mcr.disconnect()
@@ -69,35 +73,49 @@ class Minecraft:
 	def run(self, cmd):
 		if cmd[:1] == "/":
 			cmd = f"{cmd}"
-		print(f"DEBUG: {cmd}")
+		# print(f"DEBUG: {cmd}")
 		try:
 			resp = self.mcr.command(cmd)
 		except BrokenPipeError:
 			print("DEBUG: Reconnecting...")
 			self.disconnect()
-			self.connect()
+			if not self.connect(): return False
 			self.run(cmd)
+			return "Error, server offline!"
 		return resp if resp else f"Error, no response. Please let Ian know so he can fix this!\n```Command that gave the error: {cmd}```"
 
 	def list_players(self):
-		resp = self.run("list").split()
-		return f"{resp[2]}/{resp[7]}"
+		resp = self.run("list")
+		if not resp:
+			return False
+		resp = resp.split()
+		# print(f"DEBUG: resp={resp}")
+		try:
+			return f"{resp[2]}/{resp[7]}"
+		except IndexError:
+			return False
 
 	# Requires Authentication
 	async def whitelist_add(self, ctx, player):
 		resp = self.run(f"whitelist add {player}")
 		await ctx.send(resp)
+		if not resp:
+			return False
 		return resp
 
 	# Requires Authentication
 	async def whitelist_remove(self, ctx, player):
 		resp = self.run(f"whitelist remove {player}")
 		await ctx.send(resp)
+		if not resp:
+			return False
 		return resp
 
 	async def whitelist_list(self, ctx):
 		resp = self.run("whitelist list")
 		await ctx.send(resp)
+		if not resp:
+			return False
 		return resp
 
 

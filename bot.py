@@ -10,6 +10,7 @@
 # license           : MIT
 # py version        : 3.8.2 (must run on 3.6 or higher)
 #==============================================================================
+import os
 import discord
 from discord.ext import commands, tasks
 from functions   import *
@@ -19,6 +20,22 @@ credentials = read_file("credentials.md", filter=True)
 token = credentials[0]
 server = Minecraft(credentials[1], credentials[2])
 allowed_users = credentials[3:]
+commands_list = {
+	"whitelist":["whitelist"],
+	"list":["list"],
+	"kick":["kick"],
+	"op":["op"],
+	"deop":["deop"],
+	"ban":["ban"],
+	"unban":["unban","pardon"],
+	"pardon":["pardon","unban"],
+	"restart":["restart"],
+	"stop":["stop"],
+	"start":["start"],
+	"say":["say"],
+	"trust":["trust","auth"],
+	"auth":["auth","trust"],
+}
 bot = commands.Bot(command_prefix=
 	[
 		"please ",
@@ -35,7 +52,6 @@ bot = commands.Bot(command_prefix=
 
 def run():
 	try:
-		server.connect()
 		bot.run(token)
 	except Exception as error:
 		print(f"Stopped with error: {error}")
@@ -53,14 +69,23 @@ async def check_perms(ctx):
 @bot.event
 async def on_ready():
 	print(f"{bot.user} successfuly connected!")
+	activity = discord.Streaming(name="server initialization...", url="IanMC.ga")
+	await bot.change_presence(status=discord.Status.idle, activity=activity)
+	print("RCON...")
+	server.connect()
 	set_status.start()
 
 @tasks.loop(seconds=45)
 async def set_status():
 	players = server.list_players()
-	if players[0] == "0": status = discord.Status.idle
-	else: status = discord.Status.online
-	await bot.change_presence(status=status, activity=discord.Game(f"IanMC {players}"))
+	if players:
+		if players[0] == "0": status = discord.Status.idle
+		else: status = discord.Status.online
+		activity = discord.Game(f"IanMC {players}")
+	else:
+		status = discord.Status.dnd
+		activity = discord.Activity(type=discord.ActivityType.listening, name="an offline server")
+	await bot.change_presence(status=status, activity=activity)
 
 
 ##################
@@ -87,6 +112,10 @@ async def whitelist(ctx, func=None, player=None):
 async def list(ctx):
 	await ctx.send(server.run("list"))
 
+@bot.command(pass_context=True, name="help")
+async def help(ctx):
+	await ctx.send(commands_list)
+
 ##################
 # v ADMIN CMDS v #
 ##################
@@ -112,7 +141,7 @@ async def ban(ctx, player, *args):
 		args = " ".join(args) if args else ""
 		await ctx.send(server.run(f"ban {player} {args}"))
 
-@bot.command(pass_context=True, name="unban", aliases=["pardon"])
+@bot.command(pass_context=True, name="unban", aliases=commands_list["unban"][1:])
 async def unban(ctx, player):
 	if await check_perms(ctx):
 		await ctx.send(server.run(f"pardon {player}"))
@@ -122,12 +151,24 @@ async def restart(ctx):
 	if await check_perms(ctx):
 		server.run("restart")
 		await ctx.send("Restarting the server")
+		status = discord.Status.dnd
+		activity = discord.Activity(type=discord.ActivityType.listening, name="an offline server")
+		await bot.change_presence(status=status, activity=activity)
 
 @bot.command(pass_context=True, name="stop")
 async def stop(ctx):
 	if await check_perms(ctx):
 		server.run("stop")
 		await ctx.send("Stopping the server")
+		status = discord.Status.dnd
+		activity = discord.Activity(type=discord.ActivityType.listening, name="an offline server")
+		await bot.change_presence(status=status, activity=activity)
+
+@bot.command(pass_context=True, name="start")
+async def start(ctx):
+	if await check_perms(ctx):
+		os.system("start_server.cmd")
+		await ctx.send("Starting the server")
 
 @bot.command(pass_context=True, name="say")
 async def say(ctx, *args):
@@ -143,9 +184,14 @@ async def say(ctx, *args):
 async def find(ctx, *args):
 	if await check_perms(ctx):
 		log_data = read_file("log.txt")
+		for line in log_data:
+			command = args[0] if len(args) >= 1 else False
+			player = args[1] if len(args) >= 2 else False
+			player = command if command not in commands_list else player
+
 		#find log events
 
-@bot.command(pass_context=True, name="authenticate", aliases=["auth","trust"])
+@bot.command(pass_context=True, name="authenticate", aliases=commands_list["auth"][1:])
 async def auth(ctx, user:discord.Member):
 	if ctx.message.author.id == 354992856609325058:
 		msg = f"\n# {user} ID\n{user.id}\n"
