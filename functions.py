@@ -13,6 +13,7 @@
 import os
 from datetime import datetime
 from mcrcon   import MCRcon
+from time     import sleep
 
 
 def read_file(filename, directory=None, filter=False):
@@ -41,6 +42,9 @@ def filter_list(lines, filename=False):
 			data.append(line)
 	return data
 
+def start_server():
+	os.system("start_server.cmd")
+
 async def log(ctx, authenticated, filename="log.txt"):
 	if not authenticated:
 		await ctx.message.delete()
@@ -58,6 +62,7 @@ class Minecraft:
 		self.address = address
 		self.password = password
 		self.mcr = mcr
+		self.connected = False
 
 	def connect(self):
 		try:
@@ -65,6 +70,12 @@ class Minecraft:
 			return True
 		except TimeoutError:
 			return False
+		except ConnectionRefusedError:
+			if not connected:
+				start_server()
+				connected = True
+			sleep(30)
+			self.connect()
 
 	def disconnect(self):
 		self.mcr.disconnect()
@@ -82,6 +93,8 @@ class Minecraft:
 			if not self.connect(): return False
 			self.run(cmd)
 			return "Error, server offline!"
+		except OSError:
+			start_server()
 		return resp if resp else f"Error, no response. Please let Ian know so he can fix this!\n```Command that gave the error: {cmd}```"
 
 	def list_players(self):

@@ -167,8 +167,11 @@ async def stop(ctx):
 @bot.command(pass_context=True, name="start")
 async def start(ctx):
 	if await check_perms(ctx):
-		os.system("start_server.cmd")
-		await ctx.send("Starting the server")
+		if server.run("list") == "Error, server offline!":
+			start_server()
+			await ctx.send("Starting the server")
+		else:
+			await ctx.send("Server is already online")
 
 @bot.command(pass_context=True, name="say")
 async def say(ctx, *args):

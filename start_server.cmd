@@ -1,3 +1,3 @@
 x:
-cd Server
-run.cmd
+cd X:\Server
+start run.cmd
