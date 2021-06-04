@@ -42,6 +42,19 @@ def filter_list(lines, filename=False):
 			data.append(line)
 	return data
 
+def split_string(string, seperator="\n"):
+	print(len(string))
+	string = string.split(seperator)
+	resp = [seperator.join(string[:int(len(string)/2)]),seperator.join(string[int(len(string)/2):])]
+	# print(resp)
+	return resp
+
+def too_long(data, target_length=2000):
+	for item in data:
+		if len(item) > target_length:
+			return True
+	return False
+
 def start_server():
 	os.system("start_server.cmd")
 

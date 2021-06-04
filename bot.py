@@ -13,6 +13,7 @@
 import os
 import discord
 from discord.ext import commands, tasks
+from discord.errors import HTTPException
 from functions   import *
 
 
@@ -29,12 +30,14 @@ commands_list = {
 	"ban":["ban"],
 	"unban":["unban","pardon"],
 	"pardon":["pardon","unban"],
-	"restart":["restart"],
+	"restart":["restart", "reboot"],
+	"reboot":["reboot", "restart"],
 	"stop":["stop"],
 	"start":["start"],
 	"say":["say"],
 	"trust":["trust","auth"],
 	"auth":["auth","trust"],
+	"help":["help"],
 }
 bot = commands.Bot(command_prefix=
 	[
@@ -114,7 +117,31 @@ async def list(ctx):
 
 @bot.command(pass_context=True, name="help")
 async def help(ctx):
-	await ctx.send(commands_list)
+	await ctx.message.delete()
+	help_msg = """
+		All Users:
+		> help (display all commands)
+		> whitelist list (list all whitelisted users) {whitelist}
+		> list (show all online users)
+
+		Mods/Trusted Only:
+		> kick <player> [message] (kicks a player)
+		> op <player> (ops a player)
+		> deop <player> (deops a player)
+		> ban <player> [message] (bans a player)
+		> unban <player> (unbans a player) {pardon}
+		> restart (restarts the server) {reboot}
+		> stop (stops the server)
+		> start (starts the server if it is off)
+		> say <message> (sends a message through in-game chat)
+		> find <command [player] | player [command]> [count] (searches the log for specific actions/actions a user has taken, W.I.P.)
+		> whitelist add <player> (adds a player to the whitelist) {whitelist}
+		> whitelist remove <player> (removes a player from the whitelist)
+
+		Owner Only:
+		> auth <user discord.Member> (adds a user to the Mod/Trusted list) {trust}
+	"""
+	await ctx.send(help_msg)
 
 ##################
 # v ADMIN CMDS v #
@@ -146,7 +173,7 @@ async def unban(ctx, player):
 	if await check_perms(ctx):
 		await ctx.send(server.run(f"pardon {player}"))
 
-@bot.command(pass_context=True, name="restart")
+@bot.command(pass_context=True, name="restart", aliases=commands_list["restart"][1:])
 async def restart(ctx):
 	if await check_perms(ctx):
 		server.run("restart")
@@ -185,14 +212,73 @@ async def say(ctx, *args):
 
 @bot.command(pass_context=True, name="find")
 async def find(ctx, *args):
-	if await check_perms(ctx):
-		log_data = read_file("log.txt")
-		for line in log_data:
-			command = args[0] if len(args) >= 1 else False
-			player = args[1] if len(args) >= 2 else False
-			player = command if command not in commands_list else player
+	# find <command [player] [count] | player [command] [count] | count>
+	command = args[0].lower() if len(args) >= 1 else False
+	player  = args[1].lower() if len(args) >= 2 else False
+	count   = args[2]         if len(args) >= 3 else None
 
-		#find log events
+	if command not in commands_list:
+		player, command = command, player
+
+	while count is None:
+		if command:
+			try:
+				count = int(command)
+				command = False
+				break
+			except ValueError: count = False
+		if player:
+			try:
+				count = int(player)
+				player = False
+				break
+			except ValueError: count = False
+		break
+
+	resp = []
+	log_data = read_file("log.txt", filter=True)[::-1]
+	for line in log_data:
+		if len(resp) >= int(count) and count:
+			break
+		if not player and command:
+			if command in line.lower():
+				resp.append(line)
+		if player and command:
+			if command in line.lower() and player in line.split("::")[0].split("]")[1].lower():
+				resp.append(line)
+		if player and not command:
+			if player in line.split("::")[0].split("]")[1].lower():
+				resp.append(line)
+		if not player and not command:
+			resp.append(line)
+
+	target_length = 2000
+	resp = "\n".join(resp)
+	if len(resp) >= target_length:
+		result = split_string(resp)
+		while too_long(result):
+			new_result = []
+			for count, part in enumerate(result):
+				halfed = split_string(part)
+				new_result.append(halfed[0])
+				new_result.append(halfed[1])
+			result = new_result
+	else:
+		result = [resp]
+	# print(result)
+
+	print(f"DEBUG: command={command}, player={player}, count={count}")
+
+	channel = bot.get_channel(850041698921873428)
+	if ctx.channel.id != 850041698921873428:
+		await ctx.send(f"Output redirected to {channel.name}")
+	await channel.send(f"**Results of query with options, command={command}, player={player}, count={count}:**")
+	try:
+		for part in result:
+			# print(part)
+			# print(len(part))
+			await channel.send(part)
+	except HTTPException: await channel.send("Error, no results!")
 
 @bot.command(pass_context=True, name="authenticate", aliases=commands_list["auth"][1:])
 async def auth(ctx, user:discord.Member):
