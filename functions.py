@@ -84,9 +84,9 @@ class Minecraft:
 		except TimeoutError:
 			return False
 		except ConnectionRefusedError:
-			if not connected:
+			if not self.connected:
 				start_server()
-				connected = True
+				self.connected = True
 			sleep(30)
 			self.connect()
 
@@ -98,6 +98,7 @@ class Minecraft:
 		if cmd[:1] == "/":
 			cmd = f"{cmd}"
 		# print(f"DEBUG: {cmd}")
+		resp = None
 		try:
 			resp = self.mcr.command(cmd)
 		except BrokenPipeError:

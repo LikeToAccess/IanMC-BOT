@@ -115,6 +115,16 @@ async def whitelist(ctx, func=None, player=None):
 async def list(ctx):
 	await ctx.send(server.run("list"))
 
+@bot.command(pass_context=True, name="tps")
+async def tps(ctx):
+	msg = server.run("tps")
+	msg, chunks = [], msg.split("§")
+	for chunk in chunks: msg.append(chunk[1:])
+	msg = "".join(msg).split(":")
+	msg[1] = "".join([(f"***{tps.strip()}***, " if float(tps.strip()) < 18 else f"{tps.strip()}, ") for tps in msg[1].split(", ")]).strip(", ")
+	msg = ": ".join(msg)
+	await ctx.send(f"Ticks Per Second is a way to quantify the overall health of the server's performance, the higher the better (20.0 being a perfect score):\n> Average {msg}")
+
 @bot.command(pass_context=True, name="help")
 async def help(ctx):
 	await ctx.message.delete()
